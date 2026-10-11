@@ -1,5 +1,6 @@
 import random
 import streamlit as st
+import streamlit.components.v1 as components
 
 # ページ設定
 st.set_page_config(
@@ -225,9 +226,26 @@ with tab1:
     st.success(f"### `{current_romaji}`")
   st.markdown("---")
 
+  # テキスト入力欄
   user_input = st.text_input(
       "上のローマ字をここに入力してEnterを押してください",
       key=f"user_typing_{st.session_state.input_id}",
+  )
+
+  # 🎛️ レイアウトを崩さずに、描画直後の入力枠へ強制的にフォーカスを戻すJS（高さ0）
+  components.html(
+      """
+        <script>
+            setTimeout(function() {
+                const doc = window.parent.document;
+                const inputs = doc.querySelectorAll('input[type="text"]');
+                if (inputs.length > 0) {
+                    inputs[inputs.length - 1].focus();
+                }
+            }, 30);
+        </script>
+        """,
+      height=0,
   )
 
   if user_input:
