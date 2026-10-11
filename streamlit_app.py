@@ -1,6 +1,6 @@
 import json
 import random
-import google.generativeai as genai
+import urllib.request
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -318,7 +318,6 @@ with tab2:
       "これまでのタイピングの誤りデータを基に、Geminiが個別の苦手分野を自動分析します。"
   )
 
-  # st.secrets から Gemini APIキーを取得
   gemini_api_key = st.secrets.get("GEMINI_API_KEY", "")
 
   if not gemini_api_key:
@@ -329,7 +328,6 @@ with tab2:
   else:
     if st.button("🚀 Geminiに苦手を分析してもらう"):
       try:
-        client = genai.Client(api_key=gemini_api_key)
         with st.spinner("Geminiがエラーログを解析し、特訓メニューを作成中..."):
           prompt = f"""
                     あなたは小学校の親しみやすいタイピング指導のAIコーチです。
@@ -341,12 +339,27 @@ with tab2:
                     {json.dumps(st.session_state.error_logs, ensure_ascii=False)}
                     """
 
-          response = client.models.generate_content(
-              model="gemini-2.5-flash",
-              contents=prompt,
+          # 標準ライブラリ(urllib)を用いたGemini REST API呼び出し
+          url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_api_key}"
+          payload = {
+              "contents": [{"parts": [{"text": prompt}]}]
+          }
+          req = urllib.request.Request(
+              url,
+              data=json.dumps(payload).encode("utf-8"),
+              headers={"Content-Type": "application/json"},
+              method="POST",
           )
 
-          ai_report = response.text
+          with urllib.request.urlopen(req) as res:
+            res_body = json.loads(res.read().decode("utf-8"))
+            ai_report = (
+                res_body.get("candidates", [{}])[0]
+                .get("content", {})
+                .get("parts", [{}])[0]
+                .get("text", "レポートの生成に失敗しました。")
+            )
+
           st.markdown("---")
           st.markdown("### 💬 Geminiコーチからの詳細診断レポート")
           st.write(ai_report)
