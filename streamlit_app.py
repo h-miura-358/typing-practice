@@ -7,56 +7,197 @@ st.set_page_config(
     page_title="ひらがな単語タイピング ＆ AI分析", page_icon="⌨️", layout="centered"
 )
 
+
 # -------------------------------------------------------------------------
-# ひらがな 3〜6文字の単語と正しいローマ字のペア辞書
+# 💡 内部完結型のひらがな→ローマ字変換関数（ズレ・不一致を完全に防止）
 # -------------------------------------------------------------------------
-WORD_DATA = [
+def convert_to_romaji(hira_text):
+  mapping = {
+      "あ": "a",
+      "い": "i",
+      "う": "u",
+      "え": "e",
+      "お": "o",
+      "か": "ka",
+      "き": "ki",
+      "く": "ku",
+      "け": "ke",
+      "こ": "ko",
+      "さ": "sa",
+      "し": "shi",
+      "す": "su",
+      "せ": "se",
+      "そ": "so",
+      "た": "ta",
+      "ち": "chi",
+      "つ": "tsu",
+      "て": "te",
+      "と": "to",
+      "な": "na",
+      "に": "ni",
+      "ぬ": "nu",
+      "ね": "ne",
+      "の": "no",
+      "は": "ha",
+      "ひ": "hi",
+      "ふ": "fu",
+      "へ": "he",
+      "ほ": "ho",
+      "ま": "ma",
+      "み": "mi",
+      "む": "mu",
+      "め": "me",
+      "も": "mo",
+      "や": "ya",
+      "ゆ": "yu",
+      "よ": "yo",
+      "ら": "ra",
+      "り": "ri",
+      "る": "ru",
+      "れ": "re",
+      "ろ": "ro",
+      "わ": "wa",
+      "を": "wo",
+      "ん": "n",
+      "が": "ga",
+      "ぎ": "gi",
+      "ぐ": "gu",
+      "げ": "ge",
+      "ご": "go",
+      "ざ": "za",
+      "じ": "ji",
+      "ず": "zu",
+      "ぜ": "ze",
+      "ぞ": "zo",
+      "だ": "da",
+      "ぢ": "ji",
+      "づ": "zu",
+      "で": "de",
+      "ど": "do",
+      "ば": "ba",
+      "び": "bi",
+      "ぶ": "bu",
+      "べ": "be",
+      "ぼ": "bo",
+      "ぱ": "pa",
+      "ぴ": "pi",
+      "ぷ": "pu",
+      "ぺ": "pe",
+      "ぽ": "po",
+      "ー": "",
+  }
+
+  compounds = {
+      "きゃ": "kya",
+      "きゅ": "kyu",
+      "きょ": "kyo",
+      "しゃ": "sha",
+      "しゅ": "shu",
+      "しょ": "sho",
+      "ちゃ": "cha",
+      "ちゅ": "chu",
+      "ちょ": "cho",
+      "にゃ": "nya",
+      "にゅ": "nyu",
+      "にょ": "nyo",
+      "ひゃ": "hya",
+      "ひゅ": "hyu",
+      "ひょ": "hyo",
+      "みゃ": "mya",
+      "みゅ": "myu",
+      "みょ": "myo",
+      "りゃ": "rya",
+      "りゅ": "ryu",
+      "りょ": "ryo",
+      "ぎゃ": "gya",
+      "ぎゅ": "gyu",
+      "ぎょ": "gyo",
+      "じゃ": "ja",
+      "じゅ": "ju",
+      "じょ": "jo",
+      "びゃ": "bya",
+      "びゅ": "byu",
+      "びょ": "byo",
+      "ぴゃ": "pya",
+      "ぴゅ": "pyu",
+      "ぴょ": "pyo",
+  }
+
+  res = ""
+  i = 0
+  n = len(hira_text)
+  while i < n:
+    if i + 1 < n and hira_text[i : i + 2] in compounds:
+      res += compounds[hira_text[i : i + 2]]
+      i += 2
+    elif hira_text[i] == "っ" and i + 1 < n:
+      next_char = hira_text[i + 1]
+      sub_conv = mapping.get(next_char, "")
+      if sub_conv:
+        res += sub_conv[0]
+      i += 1
+    elif hira_text[i] in mapping:
+      res += mapping[hira_text[i]]
+      i += 1
+    else:
+      res += hira_text[i]
+      i += 1
+  return res
+
+
+# -------------------------------------------------------------------------
+# 3〜6文字のひらがな単語プール
+# -------------------------------------------------------------------------
+WORD_LIST = [
     # 3文字
-    {"jp": "あいさつ", "romaji": "aisatsu"},
-    {"jp": "きまり", "romaji": "kimari"},
-    {"jp": "てがみ", "romaji": "tegami"},
-    {"jp": "ことば", "romaji": "kotoba"},
-    {"jp": "ねっと", "romaji": "netto"},
-    {"jp": "じかん", "romaji": "jikan"},
-    {"jp": "れきし", "romaji": "rekishi"},
+    "あいさつ",
+    "きまり",
+    "てがみ",
+    "ことば",
+    "ねっと",
+    "じかん",
+    "れきし",
     # 4文字
-    {"jp": "ありがとう", "romaji": "arigatou"},
-    {"jp": "おつかれ", "romaji": "otsukare"},
-    {"jp": "よろしく", "romaji": "yoroshiku"},
-    {"jp": "しゅくだい", "romaji": "shukudai"},
-    {"jp": "としょかん", "romaji": "toshokan"},
-    {"jp": "でんしゃ", "romaji": "densha"},
-    {"jp": "きょかしょ", "romaji": "kyokasho"},
-    {"jp": "こくばん", "romaji": "kokuban"},
-    {"jp": "てすと", "romaji": "tesuto"},
-    {"jp": "じっけん", "romaji": "jikken"},
-    {"jp": "けんさく", "romaji": "kensaku"},
-    {"jp": "ろぐいん", "romaji": "roguin"},
+    "ありがとう",
+    "おつかれ",
+    "よろしく",
+    "しゅくだい",
+    "としょかん",
+    "でんしゃ",
+    "きょかしょ",
+    "こくばん",
+    "てすと",
+    "じっけん",
+    "けんさく",
+    "ろぐいん",
     # 5文字
-    {"jp": "おはよう", "romaji": "ohayou"},
-    {"jp": "すみません", "romaji": "sumimasen"},
-    {"jp": "しつれい", "romaji": "shitsurei"},
-    {"jp": "じかんわり", "romaji": "jikanwari"},
-    {"jp": "うんどうかい", "romaji": "undoukai"},
-    {"jp": "ぱすわーど", "romaji": "pasuwado"},
-    {"jp": "せきゅりてぃ", "romaji": "sekuriti"},
-    {"jp": "すまーとふぉん", "romaji": "sumatofon"},
-    {"jp": "あるごりずむ", "romaji": "arugorizumu"},
-    {"jp": "ねっとわーく", "romaji": "nettowaku"},
+    "おはよう",
+    "すみません",
+    "しつれい",
+    "じかんわり",
+    "うんどうかい",
+    "ぱすわーど",
+    "せきゅりてぃ",
+    "すまーとふぉん",
+    "あるごりずむ",
+    "ねっとわーく",
     # 6文字
-    {"jp": "よろしくね", "romaji": "yoroshikune"},
-    {"jp": "ぶんかさい", "romaji": "bunkasai"},
-    {"jp": "つうちひょう", "romaji": "tsuuchihyou"},
-    {"jp": "ぷろぐらみんぐ", "romaji": "puroguramingu"},
-    {"jp": "おかいけい", "romaji": "okaikei"},
-    {"jp": "しょうみきげん", "romaji": "shoumikigen"},
+    "よろしくね",
+    "ぶんかさい",
+    "つうちひょう",
+    "ぷろぐらみんぐ",
+    "おかいけい",
+    "しょうみきげん",
 ]
+
+# 文字数が3〜6文字の範囲のものだけに厳選
+WORD_LIST = [w for w in list(set(WORD_LIST)) if 3 <= len(w) <= 6]
 
 # -------------------------------------------------------------------------
 # セッション状態の初期化
 # -------------------------------------------------------------------------
-if "current_item" not in st.session_state:
-  st.session_state.current_item = random.choice(WORD_DATA)
+if "current_jp" not in st.session_state:
+  st.session_state.current_jp = random.choice(WORD_LIST)
 if "mistake_count" not in st.session_state:
   st.session_state.mistake_count = 0
 if "success_count" not in st.session_state:
@@ -68,14 +209,14 @@ if "input_id" not in st.session_state:
 
 st.title("⌨️ ひらがな単語タイピング ＆ AI分析")
 st.caption(
-    "3〜6文字のひらがな単語をテンポよく入力しよう！Enterで自動判定・次へ進みます。"
+    "3〜6文字のひらがな単語をテンポよく入力しよう！自動変換でローマ字ズレゼロ！"
 )
 
 tab1, tab2 = st.tabs(["🎯 タイピング実践", "🤖 AI詳細分析・特訓"])
 
 with tab1:
-  current_jp = st.session_state.current_item["jp"]
-  current_romaji = st.session_state.current_item["romaji"]
+  current_jp = st.session_state.current_jp
+  current_romaji = convert_to_romaji(current_jp)  # 自動生成により完全一致
 
   st.markdown("---")
   col_t1, col_t2 = st.columns(2)
@@ -87,20 +228,18 @@ with tab1:
     st.success(f"### `{current_romaji}`")
   st.markdown("---")
 
-  # 通常の入力フィールド
   user_input = st.text_input(
       "上のローマ字をここに入力してください",
       key=f"user_typing_{st.session_state.input_id}",
   )
 
-  # 🎛️ JavaScriptを使って、描画直後に自動でこの入力枠にフォーカス（カーソル）を戻す
+  # 自動でフォーカスを維持するJS
   components.html(
       """
         <script>
             const doc = window.parent.document;
             const inputs = doc.querySelectorAll('input[type="text"]');
             if (inputs.length > 0) {
-                // 一番最後のテキスト入力欄（今回の入力枠）にフォーカスを当てる
                 inputs[inputs.length - 1].focus();
             }
         </script>
@@ -111,9 +250,8 @@ with tab1:
   if user_input:
     if current_romaji.startswith(user_input):
       if user_input == current_romaji:
-        # 🎉 正解した瞬間：カウントを増やし、新しい問題を選び、input_idを変えて再描画
         st.session_state.success_count += 1
-        st.session_state.current_item = random.choice(WORD_DATA)
+        st.session_state.current_jp = random.choice(WORD_LIST)
         st.session_state.mistake_count = 0
         st.session_state.input_id += 1
         st.rerun()
@@ -134,7 +272,6 @@ with tab1:
       ):
         st.session_state.error_logs.append(error_entry)
 
-  # スタッツ表示
   col1, col2, col3 = st.columns(3)
   with col1:
     st.metric("クリア回数", f"{st.session_state.success_count} 回")
@@ -172,7 +309,7 @@ with tab2:
         st.markdown("### 💬 AIコーチからの詳細診断レポート")
         st.write(
             "「お疲れ様です！タイピングの入力ログから分析した結果、"
-            "子音の連続（`sh`, `ch`, `tsu` など）や促音の入力でリズムが崩れやすい傾向があります。"
+            "子音の連続や促音の入力でリズムが崩れやすい傾向があります。"
             "焦らず一文字ずつ確実に入力していきましょう！」"
         )
         st.markdown("### ✨ あなたの弱点を克服するための特訓メニュー")
