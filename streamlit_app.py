@@ -62,6 +62,9 @@ if "success_count" not in st.session_state:
   st.session_state.success_count = 0
 if "error_logs" not in st.session_state:
   st.session_state.error_logs = []
+# 入力欄をクリアするためのカウンターID
+if "input_id" not in st.session_state:
+  st.session_state.input_id = 0
 
 st.title("⌨️ ひらがな単語タイピング ＆ AI分析")
 st.caption(
@@ -84,20 +87,21 @@ with tab1:
     st.success(f"### `{current_romaji}`")
   st.markdown("---")
 
-  # リアルタイム入力
+  # keyに input_id の数値を組み込むことで、問題が変わるたびに新しい入力欄（空）にする
   user_input = st.text_input(
-      "上のローマ字をここに入力してください", key="user_typing"
+      "上のローマ字をここに入力してください",
+      key=f"user_typing_{st.session_state.input_id}",
   )
 
   if user_input:
     if current_romaji.startswith(user_input):
       if user_input == current_romaji:
-        # 🎉 正解した瞬間に自動で次の問題へ切り替える
+        # 🎉 正解した瞬間：カウントを増やし、新しい問題を選び、input_idを変えて再描画
         st.session_state.success_count += 1
         st.session_state.current_item = random.choice(WORD_DATA)
         st.session_state.mistake_count = 0
-        st.session_state["user_typing"] = ""  # 入力欄をクリア
-        st.rerun()  # 即座に画面を再描画して次の問題へ
+        st.session_state.input_id += 1  # キーを変更して入力欄をリセット
+        st.rerun()
       else:
         st.success("✅ 順調です！")
     else:
