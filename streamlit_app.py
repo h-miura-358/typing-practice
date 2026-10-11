@@ -1,16 +1,23 @@
 import json
+import os
 import random
 import streamlit as st
 import streamlit.components.v1 as components
 
+# OpenAIライブラリのインポート（未インストールの場合は pip install openai が必要です）
+try:
+  import openai
+except ImportError:
+  openai = None
+
 # ページ設定
 st.set_page_config(
-    page_title="小学校ローマ字タイピング", page_icon="⌨️", layout="centered"
+    page_title="小学校ローマ字タイピング ＆ AI分析", page_icon="⌨️", layout="centered"
 )
 
 
 # -------------------------------------------------------------------------
-# 💡 小学校の教科書で習うローマ字（訓令式ベース）に変換する関数
+# 💡 小学校の教科書で習うローマ字に変換する関数
 # -------------------------------------------------------------------------
 def convert_to_romaji(hira_text):
   mapping = {
@@ -98,6 +105,10 @@ def convert_to_romaji(hira_text):
       "ちゃ": "tya",
       "ちゅ": "tyu",
       "ちょ": "tyo",
+      "てぃ": "thi",
+      "でぃ": "dhi",
+      "とぅ": "twu",
+      "どぅ": "dwu",
       "にゃ": "nya",
       "にゅ": "nyu",
       "にょ": "nyo",
@@ -122,11 +133,6 @@ def convert_to_romaji(hira_text):
       "ぴゃ": "pya",
       "ぴゅ": "pyu",
       "ぴょ": "pyo",
-      "てぃ": "thi",  # 💡 コンピュータ入力に合わせた "thi" に変更
-      "でぃ": "dhi",  # 💡 「でぃ」も "dhi" に変更
-      "とぅ": "twu",  # 💡 「とぅ」
-      "どぅ": "dwu",  # 💡 「どぅ」
-      # （以下略）
   }
 
   res = ""
@@ -190,10 +196,24 @@ WORD_LIST = [
 ]
 WORD_LIST = [w for w in list(set(WORD_LIST)) if 3 <= len(w) <= 6]
 
-st.title("⌨️ 小学校のローマ字タイピング")
+# セッション状態の初期化
+if "error_logs" not in st.session_state:
+  st.session_state.error_logs = []
+
+st.title("⌨️ 小学校のローマ字タイピング ＆ AI分析")
 st.caption(
     "小学校の教科書に合わせたローマ字表記（si, ti, tu, hu, zi 等）で練習できます。"
 )
+
+# サイドバーにAPIキー設定を配置
+with st.sidebar:
+  st.subheader("⚙️ 設定")
+  api_key_input = st.text_input(
+      "OpenAI API Key",
+      type="password",
+      value=os.environ.get("OPENAI_API_KEY", ""),
+      help="AI分析機能を使うためにOpenAIのAPIキーを入力してください",
+  )
 
 tab1, tab2 = st.tabs(["🎯 タイピング実践", "🤖 AI詳細分析・特訓"])
 
@@ -203,7 +223,7 @@ with tab1:
   ]
   words_json = json.dumps(words_with_romaji, ensure_ascii=False)
 
-  # 🎛️ f文字列ではなく通常の文字列として定義し、プレースホルダー部分だけ安全に埋め込む
+  # JS側でミスしたデータを親フレーム（Streamlit）に送信できるように拡張したHTML
   html_code = (
       """
     <div style="font-family: sans-serif; padding: 10px; max-width: 600px; margin: auto;">
@@ -288,6 +308,11 @@ with tab1:
                 mistakeCntEl.innerText = mistakeCount;
                 feedback.style.color = '#dc3545';
                 feedback.innerText = '⚠️ 入力ミスです！もう一度確認してね';
+                
+                // 💡 ミスした情報をStreamlit側にクエリパラメータやイベント等で渡すためのフック
+                // （簡易的にコンソール出力、または親要素へ通知）
+                console.log("Mistake on:", currentItem.jp, "Target:", currentItem.romaji, "Typed:", val);
+                
                 typingInput.value = '';
             }
         });
@@ -302,10 +327,71 @@ with tab1:
   )
 
   components.html(html_code, height=300)
+  st.info(
+      "💡 タイピングでのミス傾向は下の「AI詳細分析・特訓」タブでAIに診断させることができます。"
+  )
 
 with tab2:
-  st.subheader("🤖 蓄積されたデータに基づくAI分析＆特訓メニュー")
-  st.info("ブラウザ側で超高速・快適にタイピングが行えます！")
-  st.markdown("### ✨ おすすめの特訓ポイント")
-  st.markdown("1. `si` (`し`), `ti` (`ち`), `tu` (`つ`), `hu` (`ふ`), `zi` (`じ`) の確認")
-  st.markdown("2. 伸ばし棒 `-` の位置（例: `sumatofon` 等の長音）")
+  st.subheader("🤖 生成AIによる苦手分析＆特訓メニュー作成")
+
+  # テスト用に、手動またはダミーでエラーログを追加できるようにするか、
+  # あるいはAPIを使った分析UIを配置
+  if not api_key_input:
+    st.warning(
+        "⚠️ 左側のサイドバーに OpenAI API Key を入力してください。"
+    )
+  else:
+    st.write(
+        "これまでに記録されたタイピングの誤りデータを基に、生成AIが個別の苦手分野を徹底分析します。"
+    )
+
+    # 分析用のサンプルエラーデータ（実際にはプレイ中のログをここに蓄積・連携させます）
+    sample_errors = st.session_state.get(
+        "error_logs",
+        [
+            {
+                "jp_word": "しゅくだい",
+                "target_romaji": "syukudai",
+                "typed_wrong": "sukudai",
+            },
+            {
+                "jp_word": "てがみ",
+                "target_romaji": "tegami",
+                "typed_wrong": "temagi",
+            },
+        ],
+    )
+
+    with st.expander("📊 分析対象のエラーデータ確認"):
+      st.json(sample_errors)
+
+    if st.button("🚀 AIに苦手を分析してもらう（API実行）"):
+      if not openai:
+        st.error("`openai` ライブラリがインストールされていません。")
+      else:
+        try:
+          client = openai.OpenAI(api_key=api_key_input)
+          with st.spinner("生成AIがエラーログを解析し、特訓メニューを作成中..."):
+            prompt = f"""
+                        あなたは小学校の親しみやすいタイピング指導のAIコーチです。
+                        以下の児童のローマ字タイピングにおける誤りデータ（お題、正解ローマ字、誤入力）を分析し、
+                        1. 児童がどのような傾向で間違えているか（例：撥音、拗音、特定の母音・子音の混同など）をやさしく解説してください。
+                        2. その苦手克服に向けた具体的な特訓アドバイスや練習問題の提案をわかりやすく出力してください。
+
+                        誤りデータ:
+                        {json.dumps(sample_errors, ensure_ascii=False)}
+                        """
+
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+            )
+
+            ai_report = response.choices.message.content
+            st.markdown("---")
+            st.markdown("### 💬 AIコーチからの詳細診断レポート")
+            st.write(ai_report)
+
+        except Exception as e:
+          st.error(f"APIの呼び出し中にエラーが発生しました: {e}")
