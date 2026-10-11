@@ -65,19 +65,12 @@ if "error_logs" not in st.session_state:
 
 st.title("⌨️ ひらがな単語タイピング ＆ AI分析")
 st.caption(
-    "3〜6文字のひらがな単語をテンポよく入力しよう！（追加のライブラリ不要版）"
+    "3〜6文字のひらがな単語をテンポよく入力しよう！正解すると自動で次の問題に進みます。"
 )
 
 tab1, tab2 = st.tabs(["🎯 タイピング実践", "🤖 AI詳細分析・特訓"])
 
 with tab1:
-  if st.button("🔀 次の問題へ"):
-    st.session_state.current_item = random.choice(WORD_DATA)
-    st.session_state.mistake_count = 0
-    # ✨ ここで入力欄のセッション状態を強制的に空にする
-    st.session_state["user_typing"] = ""
-    st.rerun()
-
   current_jp = st.session_state.current_item["jp"]
   current_romaji = st.session_state.current_item["romaji"]
 
@@ -91,20 +84,22 @@ with tab1:
     st.success(f"### `{current_romaji}`")
   st.markdown("---")
 
-  # リアルタイム入力（key="user_typing" を指定しているため、セッションで値が管理されます）
+  # リアルタイム入力
   user_input = st.text_input(
       "上のローマ字をここに入力してください", key="user_typing"
   )
 
   if user_input:
     if current_romaji.startswith(user_input):
-      st.success("✅ 順調です！")
       if user_input == current_romaji:
-        st.balloons()
-        st.markdown(
-            "🎉 **クリア！お見事です！「次の問題へ」を押して進もう！**"
-        )
+        # 🎉 正解した瞬間に自動で次の問題へ切り替える
         st.session_state.success_count += 1
+        st.session_state.current_item = random.choice(WORD_DATA)
+        st.session_state.mistake_count = 0
+        st.session_state["user_typing"] = ""  # 入力欄をクリア
+        st.rerun()  # 即座に画面を再描画して次の問題へ
+      else:
+        st.success("✅ 順調です！")
     else:
       st.error("⚠️ 入力ミスを検知しました。")
       st.session_state.mistake_count += 1
