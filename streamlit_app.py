@@ -211,8 +211,7 @@ with tab1:
   ]
   words_json = json.dumps(words_with_romaji, ensure_ascii=False)
 
-  html_code = (
-      """
+  html_code = f"""
     <div style="font-family: sans-serif; padding: 10px; max-width: 600px; margin: auto;">
         <div style="display: flex; gap: 20px; margin-bottom: 15px;">
             <div style="flex: 1; background: #e8f4fd; padding: 15px; border-radius: 8px; text-align: center;">
@@ -240,9 +239,7 @@ with tab1:
     </div>
 
     <script>
-        const wordList = """
-      + words_json
-      + """;
+        const wordList = {words_json};
         let currentItem = wordList[Math.floor(Math.random() * wordList.length)];
         
         let successCount = 0;
@@ -306,7 +303,6 @@ with tab1:
         }, 200);
     </script>
     """
-  )
 
   components.html(html_code, height=300)
 
@@ -328,8 +324,7 @@ with tab2:
     ]
     error_words_json = json.dumps(error_words_with_romaji, ensure_ascii=False)
 
-    review_html_code = (
-        """
+    review_html_code = f"""
         <div style="font-family: sans-serif; padding: 10px; max-width: 600px; margin: auto;">
             <div style="display: flex; gap: 20px; margin-bottom: 15px;">
                 <div style="flex: 1; background: #fff3cd; padding: 15px; border-radius: 8px; text-align: center;">
@@ -338,4 +333,92 @@ with tab2:
                 </div>
                 <div style="flex: 1; background: #d4edda; padding: 15px; border-radius: 8px; text-align: center;">
                     <div style="font-size: 12px; color: #555; margin-bottom: 5px;">ローマ字表記</div>
-                    <div id="rev-
+                    <div id="rev-romaji-display" style="font-size: 22px; font-weight: bold; color: #155724; font-family: monospace;">-</div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <input type="text" id="rev-typing-input" placeholder="ここに入力..." 
+                    style="width: 100%; padding: 14px; font-size: 20px; border: 2px solid #ccc; border-radius: 6px; box-sizing: border-box; outline: none;"
+                    autocomplete="off" autocapitalize="off" spellcheck="false">
+            </div>
+
+            <div id="rev-feedback" style="font-size: 16px; font-weight: bold; height: 25px; margin-bottom: 10px;"></div>
+
+            <div style="display: flex; justify-content: space-around; background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center;">
+                <div>クリア回数: <span id="rev-success-cnt" style="font-weight: bold; color: #28a745;">0</span> 回</div>
+                <div>ミス回数: <span id="rev-mistake-cnt" style="font-weight: bold; color: #dc3545;">0</span> 回</div>
+            </div>
+        </div>
+
+        <script>
+            const errorWordList = {error_words_json};
+            let revCurrentItem = errorWordList[Math.floor(Math.random() * errorWordList.length)];
+            
+            let revSuccessCount = 0;
+            let revMistakeCount = 0;
+
+            const revJpDisplay = document.getElementById('rev-jp-display');
+            const revRomajiDisplay = document.getElementById('rev-romaji-display');
+            const revTypingInput = document.getElementById('rev-typing-input');
+            const revFeedback = document.getElementById('rev-feedback');
+            const revSuccessCntEl = document.getElementById('rev-success-cnt');
+            const revMistakeCntEl = document.getElementById('rev-mistake-cnt');
+
+            function updateRevScreen() {
+                revJpDisplay.innerText = revCurrentItem.jp;
+                revRomajiDisplay.innerText = revCurrentItem.romaji;
+                revTypingInput.value = '';
+            }
+
+            updateRevScreen();
+            revTypingInput.focus();
+
+            window.addEventListener('focus', () => revTypingInput.focus());
+            document.addEventListener('click', () => revTypingInput.focus());
+
+            revTypingInput.addEventListener('input', (e) => {
+                const val = revTypingInput.value;
+                
+                if (revCurrentItem.romaji === val) {
+                    revSuccessCount++;
+                    revSuccessCntEl.innerText = revSuccessCount;
+                    revFeedback.style.color = '#28a745';
+                    revFeedback.innerText = '✅ 正解です';
+                    
+                    let nextItem;
+                    do {
+                        nextItem = errorWordList[Math.floor(Math.random() * errorWordList.length)];
+                    } while (nextItem.jp === revCurrentItem.jp && errorWordList.length > 1);
+                    
+                    revCurrentItem = nextItem;
+                    setTimeout(() => {
+                        revFeedback.innerText = '';
+                        updateRevScreen();
+                    }, 400);
+
+                } else if (revCurrentItem.romaji.startsWith(val)) {
+                    revFeedback.style.color = '#17a2b8';
+                    revFeedback.innerText = '✅ 順調です';
+                } else {
+                    revMistakeCount++;
+                    revMistakeCntEl.innerText = revMistakeCount;
+                    revFeedback.style.color = '#dc3545';
+                    revFeedback.innerText = '⚠️ 入力ミスです。確認してください';
+                    revTypingInput.value = '';
+                }
+            });
+
+            setInterval(() => {
+                if (document.activeElement !== revTypingInput) {
+                    revTypingInput.focus();
+                }
+            }, 200);
+        </script>
+        """
+
+    components.html(review_html_code, height=300)
+
+    if st.button("🧹 ミス記録をリセット"):
+      st.session_state.error_logs = []
+      st.rerun()
