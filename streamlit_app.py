@@ -1,45 +1,43 @@
 import random
 import streamlit as st
 
-# ページの設定
 st.set_page_config(
-    page_title="日常単語タイピング＆AIコーチ", page_icon="⌨️", layout="centered"
+    page_title="日常単語タイピング ＆ AIコーチ", page_icon="⌨️", layout="centered"
 )
 
-# セッション状態の初期化
-if "score_history" not in st.session_state:
-    st.session_state.score_history = []
-if "current_word" not in st.session_state:
-    st.session_state.current_word = ""
-
-# 日常単語のデータバンク（テーマ別）
+# 日常単語のデータバンク
 WORD_BANK = {
     "日常の挨拶・会話": [
-        "お疲れ様です",
-        "ありがとうございます",
-        "よろしくおねがいします",
-        "ちょっと待ってください",
+        "ohotsukaresama",
+        "arigatou",
+        "yoroshiku",
+        "chottomate",
     ],
     "学校・生活": [
-        "時間割を確認する",
-        "宿題を提出する",
-        "図書館で本を借りる",
-        "電車に乗り遅れる",
+        "jikanwari",
+        "shukudai",
+        "toshokan",
+        "densha",
     ],
     "ネット・SNS": [
-        "パスワードを再設定する",
-        "通知をオフにする",
-        "アカウントを登録する",
-        "検索エンジンで調べる",
+        "pasuwado",
+        "tsuchi",
+        "akanunto",
+        "kensaku",
     ],
 }
 
-st.title("⌨️ 日常単語タイピング ＆ AIアドバイザー")
-st.caption(
-    "個人情報の入力は不要です！毎日のちょっとしたスキマ時間でタイピングを上達させましょう。"
-)
+# セッション状態の初期化
+if "current_word" not in st.session_state:
+  st.session_state.current_word = "ohotsukaresama"  # 初期値
+if "mistake_count" not in st.session_state:
+  st.session_state.mistake_count = 0
+if "error_logs" not in st.session_state:
+  st.session_state.error_logs = []
 
-# タブの作成
+st.title("⌨️ リアルタイムタイピング ＆ AIアドバイザー")
+st.caption("個人情報不要！1文字打つごとにリアルタイムでフィードバックします。")
+
 tab1, tab2 = st.tabs(["🎯 タイピング実践", "🤖 AI弱点分析・特訓"])
 
 with tab1:
@@ -48,60 +46,72 @@ with tab1:
       "テーマの選択", list(WORD_BANK.keys()), key="theme_select"
   )
 
-  # お題の選択ボタン
-  if st.button("新しいお題を出す"):
+  if st.button("新しいお題をセット"):
     st.session_state.current_word = random.choice(WORD_BANK[selected_theme])
+    st.session_state.mistake_count = 0
+    st.rerun()
 
-  if st.session_state.current_word:
-    st.info(f"💡 **いまのお題:** {st.session_state.current_word}")
+  target = st.session_state.current_word
 
-    # タイピング入力欄
-    user_input = st.text_input(
-        "上の文字をローマ字（またはそのまま）で入力してEnter", key="typing_box"
-    )
+  st.markdown("### 📝 お題（ローマ字入力）")
+  st.info(f"**{target}**")
 
-    if user_input:
-      if user_input == st.session_state.current_word:
-        st.success("🎉 正解です！お見事！")
-        # 履歴の保存（簡易）
-        st.session_state.score_history.append(
-            {
-                "word": st.session_state.current_word,
-                "status": "Success",
-            }
-        )
-      else:
-        st.warning(
-            f"⚠️ 入力内容が違います。（入力: {user_input} / お題:"
-            f" {st.session_state.current_word}）"
-        )
+  # リアルタイム入力を受け付けるテキスト入力
+  # (on_change やキー変更ごとに即座に評価される)
+  user_input = st.text_input(
+      "ここにローマ字を入力してください", key="user_typing", value=""
+  )
+
+  if user_input:
+    # リアルタイムのプレフィックス（前方一致）チェック
+    if target.startswith(user_input):
+      st.success("✅ 順調です！この調子！")
+      if user_input == target:
+        st.balloons()
+        st.markdown("🎉 **クリア！お見事です！**")
+    else:
+      st.error(
+          "⚠️ 入力が違います！タイピングミスが発生しています。"
+      )
+      st.session_state.mistake_count += 1
+      # どのような入力で間違えたかを蓄積（AI分析用）
+      st.session_state.error_logs.append(
+          {"target": target, "typed": user_input}
+      )
+
+  # 現在のスタッツ表示
+  col1, col2 = st.columns(2)
+  with col1:
+    st.metric("現在のミス回数", f"{st.session_state.mistake_count} 回")
+  with col2:
+    st.metric("蓄積されたエラーデータ数", len(st.session_state.error_logs))
 
 with tab2:
   st.subheader("🤖 AIによるタイピング診断＆特訓メニュー")
 
-  if not st.session_state.score_history:
+  if not st.session_state.error_logs:
     st.info(
-        "まずは「タイピング実践」タブでいくつか問題に挑戦してみましょう！"
+        "まずは「タイピング実践」タブでタイピングを行ってデータを集めましょう！"
     )
   else:
     st.write(
-        f"これまでの練習回数: **{len(st.session_state.score_history)}回**"
+        f"これまでに検知されたミス総数:"
+        f" **{len(st.session_state.error_logs)}件**"
     )
 
-    # Gemini APIなどと連携してフィードバックを生成するイメージの場所
-    if st.button("AIに弱点を分析してもらう"):
-      with st.spinner("AIがあなたのタイピング傾向を分析中..."):
-        # ここに `google-genai` を使ったAPI呼び出しを記述します
-        # 例: 「以下の入力履歴から、苦手なローマ字の傾向を分析し、
-        # 日常生活で使える新しい練習用の短い単語を3つ作ってください」
+    if st.button("AIにミスの傾向を分析してもらう"):
+      with st.spinner("AIがミスの傾向を分析中..."):
+        # ここに Gemini API (google-genai) を組み込んでエラーログを送信する
         st.markdown("---")
-        st.markdown("### 💬 AIコーチからのアドバイス")
+        st.markdown("### 💬 AIコーチからの分析レポート")
         st.write(
-            "「お疲れ様です！子音と母音の切り替え（特に `shi` や `chi`"
-            " など）で少しペースが落ちる傾向が見られます。"
-            "指を大きく動かす練習を意識してみましょう！」"
+            "「お疲れ様です！子音の連続や母音の切り替え部分でミスの傾向が見られます。"
+            "特にキーの押し間違いが多い箇所を重点的に練習しましょう。」"
         )
-        st.markdown("### ✨ あなたのためのAI特訓単語リスト")
-        st.markdown("1. `しょうゆをかける`")
-        st.markdown("2. `ちゃのまでお茶を飲む`")
-        st.markdown("3. `しんぶんしを読む`")
+        st.markdown("### ✨ あなたのための特訓単語")
+        st.markdown(
+            "1. `shukudai` （シャ・チュ・シュの音の切り替えを意識）"
+        )
+        st.markdown(
+            "2. `toshokan` （指のホームポジションを意識した高速入力）"
+        )
