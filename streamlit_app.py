@@ -1,13 +1,8 @@
+from google import genai
 import json
 import random
 import streamlit as st
 import streamlit.components.v1 as components
-
-# Google Gen AI SDK のインポート
-try:
-  from google import genai
-except ImportError:
-  genai = None
 
 # ページ設定
 st.set_page_config(
@@ -333,31 +328,28 @@ with tab2:
     )
   else:
     if st.button("🚀 Geminiに苦手を分析してもらう"):
-      if not genai:
-        st.error("`google-genai` ライブラリがインストールされていません。")
-      else:
-        try:
-          client = genai.Client(api_key=gemini_api_key)
-          with st.spinner("Geminiがエラーログを解析し、特訓メニューを作成中..."):
-            prompt = f"""
-                        あなたは小学校の親しみやすいタイピング指導のAIコーチです。
-                        以下の児童のローマ字タイピングにおける誤りデータを分析し、
-                        1. 児童がどのような傾向で間違えているかをやさしく解説してください。
-                        2. その苦手克服に向けた具体的な特訓アドバイスや練習問題の提案を出力してください。
+      try:
+        client = genai.Client(api_key=gemini_api_key)
+        with st.spinner("Geminiがエラーログを解析し、特訓メニューを作成中..."):
+          prompt = f"""
+                    あなたは小学校の親しみやすいタイピング指導のAIコーチです。
+                    以下の児童のローマ字タイピングにおける誤りデータを分析し、
+                    1. 児童がどのような傾向で間違えているかをやさしく解説してください。
+                    2. その苦手克服に向けた具体的な特訓アドバイスや練習問題の提案を出力してください。
 
-                        誤りデータ:
-                        {json.dumps(st.session_state.error_logs, ensure_ascii=False)}
-                        """
+                    誤りデータ:
+                    {json.dumps(st.session_state.error_logs, ensure_ascii=False)}
+                    """
 
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-            )
+          response = client.models.generate_content(
+              model="gemini-2.5-flash",
+              contents=prompt,
+          )
 
-            ai_report = response.text
-            st.markdown("---")
-            st.markdown("### 💬 Geminiコーチからの詳細診断レポート")
-            st.write(ai_report)
+          ai_report = response.text
+          st.markdown("---")
+          st.markdown("### 💬 Geminiコーチからの詳細診断レポート")
+          st.write(ai_report)
 
-        except Exception as e:
-          st.error(f"APIの呼び出し中にエラーが発生しました: {e}")
+      except Exception as e:
+        st.error(f"APIの呼び出し中にエラーが発生しました: {e}")
