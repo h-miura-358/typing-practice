@@ -1,14 +1,13 @@
 import json
-import os
 import random
 import streamlit as st
 import streamlit.components.v1 as components
 
-# OpenAIライブラリのインポート（未インストールの場合は pip install openai が必要です）
+# Google Gen AI SDK のインポート
 try:
-  import openai
+  from google import genai
 except ImportError:
-  openai = None
+  genai = None
 
 # ページ設定
 st.set_page_config(
@@ -17,7 +16,7 @@ st.set_page_config(
 
 
 # -------------------------------------------------------------------------
-# 💡 小学校の教科書で習うローマ字に変換する関数
+# 💡 小学校の教科書に合わせたローマ字に変換する関数
 # -------------------------------------------------------------------------
 def convert_to_romaji(hira_text):
   mapping = {
@@ -196,24 +195,20 @@ WORD_LIST = [
 ]
 WORD_LIST = [w for w in list(set(WORD_LIST)) if 3 <= len(w) <= 6]
 
-# セッション状態の初期化
+# セッション初期化
 if "error_logs" not in st.session_state:
-  st.session_state.error_logs = []
+  st.session_state.error_logs = [
+      {
+          "jp_word": "しゅくだい",
+          "target_romaji": "syukudai",
+          "typed_wrong": "sukudai",
+      }
+  ]
 
 st.title("⌨️ 小学校のローマ字タイピング ＆ AI分析")
 st.caption(
     "小学校の教科書に合わせたローマ字表記（si, ti, tu, hu, zi 等）で練習できます。"
 )
-
-# サイドバーにAPIキー設定を配置
-with st.sidebar:
-  st.subheader("⚙️ 設定")
-  api_key_input = st.text_input(
-      "OpenAI API Key",
-      type="password",
-      value=os.environ.get("OPENAI_API_KEY", ""),
-      help="AI分析機能を使うためにOpenAIのAPIキーを入力してください",
-  )
 
 tab1, tab2 = st.tabs(["🎯 タイピング実践", "🤖 AI詳細分析・特訓"])
 
@@ -223,7 +218,6 @@ with tab1:
   ]
   words_json = json.dumps(words_with_romaji, ensure_ascii=False)
 
-  # JS側でミスしたデータを親フレーム（Streamlit）に送信できるように拡張したHTML
   html_code = (
       """
     <div style="font-family: sans-serif; padding: 10px; max-width: 600px; margin: auto;">
@@ -308,11 +302,6 @@ with tab1:
                 mistakeCntEl.innerText = mistakeCount;
                 feedback.style.color = '#dc3545';
                 feedback.innerText = '⚠️ 入力ミスです！もう一度確認してね';
-                
-                // 💡 ミスした情報をStreamlit側にクエリパラメータやイベント等で渡すためのフック
-                // （簡易的にコンソール出力、または親要素へ通知）
-                console.log("Mistake on:", currentItem.jp, "Target:", currentItem.romaji, "Typed:", val);
-                
                 typingInput.value = '';
             }
         });
@@ -327,71 +316,50 @@ with tab1:
   )
 
   components.html(html_code, height=300)
-  st.info(
-      "💡 タイピングでのミス傾向は下の「AI詳細分析・特訓」タブでAIに診断させることができます。"
-  )
 
 with tab2:
-  st.subheader("🤖 生成AIによる苦手分析＆特訓メニュー作成")
+  st.subheader("🤖 Geminiによる苦手分析＆特訓メニュー作成")
+  st.write(
+      "これまでのタイピングの誤りデータを基に、Geminiが個別の苦手分野を自動分析します。"
+  )
 
-  # テスト用に、手動またはダミーでエラーログを追加できるようにするか、
-  # あるいはAPIを使った分析UIを配置
-  if not api_key_input:
+  # st.secrets から Gemini APIキーを取得
+  gemini_api_key = st.secrets.get("GEMINI_API_KEY", "")
+
+  if not gemini_api_key:
     st.warning(
-        "⚠️ 左側のサイドバーに OpenAI API Key を入力してください。"
+        "⚠️ GEMINI_API_KEY が設定されていません。StreamlitのSecretsに"
+        " `GEMINI_API_KEY` を登録してください。"
     )
   else:
-    st.write(
-        "これまでに記録されたタイピングの誤りデータを基に、生成AIが個別の苦手分野を徹底分析します。"
-    )
-
-    # 分析用のサンプルエラーデータ（実際にはプレイ中のログをここに蓄積・連携させます）
-    sample_errors = st.session_state.get(
-        "error_logs",
-        [
-            {
-                "jp_word": "しゅくだい",
-                "target_romaji": "syukudai",
-                "typed_wrong": "sukudai",
-            },
-            {
-                "jp_word": "てがみ",
-                "target_romaji": "tegami",
-                "typed_wrong": "temagi",
-            },
-        ],
-    )
-
-    with st.expander("📊 分析対象のエラーデータ確認"):
-      st.json(sample_errors)
-
-    if st.button("🚀 AIに苦手を分析してもらう（API実行）"):
-      if not openai:
-        st.error("`openai` ライブラリがインストールされていません。")
+    if st.button("🚀 Geminiに苦手を分析してもらう"):
+      if not genai:
+        st.error("`google-genai` ライブラリがインストールされていません。")
       else:
         try:
-          client = openai.OpenAI(api_key=api_key_input)
-          with st.spinner("生成AIがエラーログを解析し、特訓メニューを作成中..."):
+          # Gemini クライアントの初期化
+          client = genai.Client(api_key=gemini_api_key)
+          with st.spinner("Geminiがエラーログを解析し、特訓メニューを作成中..."):
             prompt = f"""
                         あなたは小学校の親しみやすいタイピング指導のAIコーチです。
-                        以下の児童のローマ字タイピングにおける誤りデータ（お題、正解ローマ字、誤入力）を分析し、
-                        1. 児童がどのような傾向で間違えているか（例：撥音、拗音、特定の母音・子音の混同など）をやさしく解説してください。
-                        2. その苦手克服に向けた具体的な特訓アドバイスや練習問題の提案をわかりやすく出力してください。
+                        以下の児童のローマ字タイピングにおける誤りデータを分析し、
+                        1. 児童がどのような傾向で間違えているかをやさしく解説してください。
+                        2. その苦手克服に向けた具体的な特訓アドバイスや練習問題の提案を出力してください。
 
                         誤りデータ:
-                        {json.dumps(sample_errors, ensure_ascii=False)}
+                        {json.dumps(st.session_state.error_logs, ensure_ascii=False)}
                         """
 
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
+            # Gemini の標準的な高速モデル（gemini-2.5-flashなど）を使用
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
             )
 
-            ai_report = response.choices.message.content
+            ai_report = response.text
             st.markdown("---")
-            st.markdown("### 💬 AIコーチからの詳細診断レポート")
+            st.markdown("### 💬 Geminiコーチからの詳細診断レポート")
             st.write(ai_report)
 
         except Exception as e:
-          st.error(f"APIの呼び出し中にエラーが発生しました: {e}")
+          st.error(f"APIの呼び出し中にエラーが発生しました: {e}") {e}")
