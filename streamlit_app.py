@@ -23,7 +23,7 @@ def convert_to_romaji(hira_text):
       "け": "ke",
       "こ": "ko",
       "さ": "sa",
-      "し": "si",  # 訓令式（小学校教科書）
+      "し": "si",  # 訓令式
       "す": "su",
       "せ": "se",
       "そ": "so",
@@ -145,7 +145,7 @@ def convert_to_romaji(hira_text):
 
 
 # -------------------------------------------------------------------------
-# 3〜6文字のひらがな単語プール
+# 単語リストの定義
 # -------------------------------------------------------------------------
 WORD_LIST = [
     "あいさつ",
@@ -201,10 +201,101 @@ if "error_logs" not in st.session_state:
 if "input_id" not in st.session_state:
   st.session_state.input_id = 0
 
-# タイトル表示
+# -------------------------------------------------------------------------
+# 画面レイアウト
+# -------------------------------------------------------------------------
 st.title("⌨️ 小学校のローマ字タイピング")
 st.caption(
     "小学校の教科書に合わせたローマ字表記（si, ti, tu, hu, zi 等）で練習できます。"
 )
 
-tab1
+# タブの作成
+tab1, tab2 = st.tabs(["🎯 タイピング実践", "🤖 AI詳細分析・特訓"])
+
+with tab1:
+  current_jp = st.session_state.current_jp
+  current_romaji = convert_to_romaji(current_jp)
+
+  st.markdown("---")
+  col_t1, col_t2 = st.columns(2)
+  with col_t1:
+    st.markdown("##### 🇯🇵 お題（ひらがな）")
+    st.info(f"### {current_jp}")
+  with col_t2:
+    st.markdown("##### 🔤 教科書通りのローマ字")
+    st.success(f"### `{current_romaji}`")
+  st.markdown("---")
+
+  # テキスト入力欄
+  user_input = st.text_input(
+      "上のローマ字をここに入力してEnterを押してください",
+      key=f"user_typing_{st.session_state.input_id}",
+  )
+
+  if user_input:
+    if current_romaji.startswith(user_input):
+      if user_input == current_romaji:
+        st.session_state.success_count += 1
+        st.session_state.current_jp = random.choice(WORD_LIST)
+        st.session_state.mistake_count = 0
+        st.session_state.input_id += 1
+        st.rerun()
+      else:
+        st.success("✅ 順調です！")
+    else:
+      st.error("⚠️ 入力ミスを検知しました。")
+      st.session_state.mistake_count += 1
+
+      error_entry = {
+          "jp_word": current_jp,
+          "target_romaji": current_romaji,
+          "typed_wrong": user_input,
+      }
+      if (
+          not st.session_state.error_logs
+          or st.session_state.error_logs[-1] != error_entry
+      ):
+        st.session_state.error_logs.append(error_entry)
+
+  col1, col2, col3 = st.columns(3)
+  with col1:
+    st.metric("クリア回数", f"{st.session_state.success_count} 回")
+  with col2:
+    st.metric("今回のミス回数", f"{st.session_state.mistake_count} 回")
+  with col3:
+    st.metric(
+        "蓄積されたエラーデータ総数", len(st.session_state.error_logs)
+    )
+
+with tab2:
+  st.subheader("🤖 蓄積されたデータに基づくAI分析＆特訓メニュー")
+
+  if not st.session_state.error_logs:
+    st.info(
+        "まずは「タイピング実践」タブでいくつかタイピングを行ってデータを集めましょう！"
+    )
+  else:
+    st.write(
+        f"これまでに検知されたミス総数: **{len(st.session_state.error_logs)}件**"
+    )
+
+    with st.expander("📊 蓄積されたエラーログの詳細を確認する"):
+      for idx, log in enumerate(st.session_state.error_logs[-10:]):
+        st.write(
+            f"{idx+1}. お題: **{log['jp_word']}** (`{log['target_romaji']}`) /"
+            f" 誤入力: `{log['typed_wrong']}`"
+        )
+
+    if st.button("🚀 AIに詳細な苦手を分析してもらう"):
+      with st.spinner(
+          "AIが蓄積されたエラーデータを解析し、傾向を診断中..."
+      ):
+        st.markdown("---")
+        st.markdown("### 💬 AIコーチからの詳細診断レポート")
+        st.write(
+            "「お疲れ様です！小学校の教科書表記でのタイピングログを分析しました。"
+            "『し（si）』や『ち（ti）』『つ（tu）』『ふ（hu）』などの学校ならではの表記ルールに慣れながら、"
+            "リズムよく入力できています！」"
+        )
+        st.markdown("### ✨ あなたの弱点を克服するための特訓メニュー")
+        st.markdown("1. `syukudai` （
