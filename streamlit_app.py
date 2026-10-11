@@ -4,12 +4,12 @@ import streamlit.components.v1 as components
 
 # ページ設定
 st.set_page_config(
-    page_title="ひらがな単語タイピング ＆ AI分析", page_icon="⌨️", layout="centered"
+    page_title="小学校ローマ字タイピング ＆ AI分析", page_icon="⌨️", layout="centered"
 )
 
 
 # -------------------------------------------------------------------------
-# 💡 内部完結型のひらがな→ローマ字変換関数（ズレ・不一致を完全に防止）
+# 💡 小学校の教科書で習うローマ字（訓令式ベース）に変換する関数
 # -------------------------------------------------------------------------
 def convert_to_romaji(hira_text):
   mapping = {
@@ -24,13 +24,13 @@ def convert_to_romaji(hira_text):
       "け": "ke",
       "こ": "ko",
       "さ": "sa",
-      "し": "shi",
+      "し": "si",  # 教科書表記
       "す": "su",
       "せ": "se",
       "そ": "so",
       "た": "ta",
-      "ち": "chi",
-      "つ": "tsu",
+      "ち": "ti",  # 教科書表記
+      "つ": "tu",  # 教科書表記
       "て": "te",
       "と": "to",
       "な": "na",
@@ -40,7 +40,7 @@ def convert_to_romaji(hira_text):
       "の": "no",
       "は": "ha",
       "ひ": "hi",
-      "ふ": "fu",
+      "ふ": "hu",  # 教科書表記
       "へ": "he",
       "ほ": "ho",
       "ま": "ma",
@@ -65,13 +65,13 @@ def convert_to_romaji(hira_text):
       "げ": "ge",
       "ご": "go",
       "ざ": "za",
-      "じ": "ji",
+      "じ": "zi",  # 教科書表記
       "ず": "zu",
       "ぜ": "ze",
       "ぞ": "zo",
       "だ": "da",
-      "ぢ": "ji",
-      "づ": "zu",
+      "ぢ": "di",
+      "づ": "du",
       "で": "de",
       "ど": "do",
       "ば": "ba",
@@ -91,12 +91,12 @@ def convert_to_romaji(hira_text):
       "きゃ": "kya",
       "きゅ": "kyu",
       "きょ": "kyo",
-      "しゃ": "sha",
-      "しゅ": "shu",
-      "しょ": "sho",
-      "ちゃ": "cha",
-      "ちゅ": "chu",
-      "ちょ": "cho",
+      "しゃ": "sya",  # 教科書表記
+      "しゅ": "syu",  # 教科書表記
+      "しょ": "syo",  # 教科書表記
+      "ちゃ": "tya",  # 教科書表記
+      "ちゅ": "tyu",  # 教科書表記
+      "ちょ": "tyo",  # 教科書表記
       "にゃ": "nya",
       "にゅ": "nyu",
       "にょ": "nyo",
@@ -112,9 +112,9 @@ def convert_to_romaji(hira_text):
       "ぎゃ": "gya",
       "ぎゅ": "gyu",
       "ぎょ": "gyo",
-      "じゃ": "ja",
-      "じゅ": "ju",
-      "じょ": "jo",
+      "じゃ": "zya",  # 教科書表記
+      "じゅ": "zyu",  # 教科書表記
+      "じょ": "zyo",  # 教科書表記
       "びゃ": "bya",
       "びゅ": "byu",
       "びょ": "byo",
@@ -190,7 +190,6 @@ WORD_LIST = [
     "しょうみきげん",
 ]
 
-# 文字数が3〜6文字の範囲のものだけに厳選
 WORD_LIST = [w for w in list(set(WORD_LIST)) if 3 <= len(w) <= 6]
 
 # -------------------------------------------------------------------------
@@ -207,16 +206,18 @@ if "error_logs" not in st.session_state:
 if "input_id" not in st.session_state:
   st.session_state.input_id = 0
 
-st.title("⌨️ ひらがな単語タイピング ＆ AI分析")
+st.title("⌨️ 小学校のローマ字タイピング ＆ AI分析")
 st.caption(
-    "3〜6文字のひらがな単語をテンポよく入力しよう！自動変換でローマ字ズレゼロ！"
+    "小学校の教科書に合わせたローマ字表記（si, ti, tu, hu, zi等）で練習できます！"
 )
 
 tab1, tab2 = st.tabs(["🎯 タイピング実践", "🤖 AI詳細分析・特訓"])
 
 with tab1:
   current_jp = st.session_state.current_jp
-  current_romaji = convert_to_romaji(current_jp)  # 自動生成により完全一致
+  current_romaji = (
+      convert_to_romaji(current_jp)
+  )  # 教科書表記で自動ローマ字生成
 
   st.markdown("---")
   col_t1, col_t2 = st.columns(2)
@@ -224,7 +225,7 @@ with tab1:
     st.markdown("##### 🇯🇵 お題（ひらがな）")
     st.info(f"### {current_jp}")
   with col_t2:
-    st.markdown("##### 🔤 入力するローマ字")
+    st.markdown("##### 🔤 教科書通りのローマ字")
     st.success(f"### `{current_romaji}`")
   st.markdown("---")
 
@@ -308,10 +309,10 @@ with tab2:
         st.markdown("---")
         st.markdown("### 💬 AIコーチからの詳細診断レポート")
         st.write(
-            "「お疲れ様です！タイピングの入力ログから分析した結果、"
-            "子音の連続や促音の入力でリズムが崩れやすい傾向があります。"
-            "焦らず一文字ずつ確実に入力していきましょう！」"
+            "「お疲れ様です！小学校の教科書表記でのタイピングログを分析しました。"
+            "『し（si）』や『ち（ti）』『つ（tu）』『ふ（hu）』などの学校ならではの表記ルールに慣れながら、"
+            "リズムよく入力できています！」"
         )
         st.markdown("### ✨ あなたの弱点を克服するための特訓メニュー")
-        st.markdown("1. `shukudai` （シャ・チュ・シュの切り替え）")
-        st.markdown("2. `pasuwado` （指のホームポジションを意識）")
+        st.markdown("1. `s yukudai` （※例：syukudaiなど、子音の切り替え）")
+        st.markdown("2. `tu tusin` （基礎的な音の組み合わせ）")
