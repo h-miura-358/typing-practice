@@ -209,7 +209,6 @@ st.caption(
     "小学校の教科書に合わせたローマ字表記（si, ti, tu, hu, zi 等）で練習できます。"
 )
 
-# タブの作成
 tab1, tab2 = st.tabs(["🎯 タイピング実践", "🤖 AI詳細分析・特訓"])
 
 with tab1:
@@ -226,7 +225,6 @@ with tab1:
     st.success(f"### `{current_romaji}`")
   st.markdown("---")
 
-  # テキスト入力欄
   user_input = st.text_input(
       "上のローマ字をここに入力してEnterを押してください",
       key=f"user_typing_{st.session_state.input_id}",
@@ -298,4 +296,5 @@ with tab2:
             "リズムよく入力できています！」"
         )
         st.markdown("### ✨ あなたの弱点を克服するための特訓メニュー")
-        st.markdown("1. `syukudai` （
+        st.markdown("1. `syukudai` （子音の切り替え）")
+        st.markdown("2. `tusin` （基礎的な音の組み合わせ）")
