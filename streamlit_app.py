@@ -1,17 +1,18 @@
 import json
 import random
-import urllib.request
 import streamlit as st
 import streamlit.components.v1 as components
 
 # ページ設定
 st.set_page_config(
-    page_title="小学校ローマ字タイピング ＆ AI分析", page_icon="⌨️", layout="centered"
+    page_title="ローマ字タイピング ＆ 苦手克服トレーニング",
+    page_icon="⌨️",
+    layout="centered",
 )
 
 
 # -------------------------------------------------------------------------
-# 💡 小学校の教科書に合わせたローマ字に変換する関数
+# 💡 ローマ字変換ロジック
 # -------------------------------------------------------------------------
 def convert_to_romaji(hira_text):
   mapping = {
@@ -151,6 +152,7 @@ def convert_to_romaji(hira_text):
   return res
 
 
+# 通常の練習用ワードリスト
 WORD_LIST = [
     "あいさつ",
     "きまり",
@@ -190,24 +192,20 @@ WORD_LIST = [
 ]
 WORD_LIST = [w for w in list(set(WORD_LIST)) if 3 <= len(w) <= 6]
 
-# セッション初期化
+# セッション初期化（間違いの記録用）
 if "error_logs" not in st.session_state:
-  st.session_state.error_logs = [
-      {
-          "jp_word": "しゅくだい",
-          "target_romaji": "syukudai",
-          "typed_wrong": "sukudai",
-      }
-  ]
+  st.session_state.error_logs = ["しゅくだい", "しつれい", "せきゅりてぃ"]
 
-st.title("⌨️ 小学校のローマ字タイピング ＆ AI分析")
-st.caption(
-    "小学校の教科書に合わせたローマ字表記（si, ti, tu, hu, zi 等）で練習できます。"
-)
+st.title("⌨️ ローマ字タイピングトレーニング")
+st.caption("標準的なローマ字入力によるタイピング実践および復習アプリです。")
 
-tab1, tab2 = st.tabs(["🎯 タイピング実践", "🤖 AI詳細分析・特訓"])
+tab1, tab2 = st.tabs(["🎯 通常トレーニング", "🔁 苦手克服モード"])
 
+# -------------------------------------------------------------------------
+# タブ1: 通常トレーニング
+# -------------------------------------------------------------------------
 with tab1:
+  st.subheader("🎯 タイピング実践")
   words_with_romaji = [
       {"jp": w, "romaji": convert_to_romaji(w)} for w in WORD_LIST
   ]
@@ -218,17 +216,17 @@ with tab1:
     <div style="font-family: sans-serif; padding: 10px; max-width: 600px; margin: auto;">
         <div style="display: flex; gap: 20px; margin-bottom: 15px;">
             <div style="flex: 1; background: #e8f4fd; padding: 15px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 12px; color: #555; margin-bottom: 5px;">お題（ひらがな）</div>
+                <div style="font-size: 12px; color: #555; margin-bottom: 5px;">出題（ひらがな）</div>
                 <div id="jp-display" style="font-size: 26px; font-weight: bold; color: #004085;">-</div>
             </div>
             <div style="flex: 1; background: #e2fcd6; padding: 15px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 12px; color: #555; margin-bottom: 5px;">教科書通りのローマ字</div>
+                <div style="font-size: 12px; color: #555; margin-bottom: 5px;">ローマ字表記</div>
                 <div id="romaji-display" style="font-size: 22px; font-weight: bold; color: #155724; font-family: monospace;">-</div>
             </div>
         </div>
 
         <div style="margin-bottom: 10px;">
-            <input type="text" id="typing-input" placeholder="ここに入力してね..." 
+            <input type="text" id="typing-input" placeholder="ここに入力..." 
                 style="width: 100%; padding: 14px; font-size: 20px; border: 2px solid #ccc; border-radius: 6px; box-sizing: border-box; outline: none;"
                 autocomplete="off" autocapitalize="off" spellcheck="false">
         </div>
@@ -276,7 +274,7 @@ with tab1:
                 successCount++;
                 successCntEl.innerText = successCount;
                 feedback.style.color = '#28a745';
-                feedback.innerText = '✅ 正解！次の問題へ進みます！';
+                feedback.innerText = '✅ 正解！次の問題へ進みます';
                 
                 let nextItem;
                 do {
@@ -291,12 +289,12 @@ with tab1:
 
             } else if (currentItem.romaji.startsWith(val)) {
                 feedback.style.color = '#17a2b8';
-                feedback.innerText = '✅ 順調です！';
+                feedback.innerText = '✅ 順調です';
             } else {
                 mistakeCount++;
                 mistakeCntEl.innerText = mistakeCount;
                 feedback.style.color = '#dc3545';
-                feedback.innerText = '⚠️ 入力ミスです！もう一度確認してね';
+                feedback.innerText = '⚠️ 入力ミスです。確認してください';
                 typingInput.value = '';
             }
         });
@@ -312,57 +310,32 @@ with tab1:
 
   components.html(html_code, height=300)
 
+# -------------------------------------------------------------------------
+# タブ2: 苦手克服モード
+# -------------------------------------------------------------------------
 with tab2:
-  st.subheader("🤖 Geminiによる苦手分析＆特訓メニュー作成")
-  st.write(
-      "これまでのタイピングの誤りデータを基に、Geminiが個別の苦手分野を自動分析します。"
-  )
+  st.subheader("🔁 苦手克服モード（ミスした単語の集中特訓）")
+  st.write("これまでのトレーニングで誤答した単語に絞って演習を行います。")
 
-  gemini_api_key = st.secrets.get("GEMINI_API_KEY", "")
-
-  if not gemini_api_key:
-    st.warning(
-        "⚠️ GEMINI_API_KEY が設定されていません。StreamlitのSecretsに"
-        " `GEMINI_API_KEY` を登録してください。"
-    )
+  if not st.session_state.error_logs:
+    st.success("🎉 現在、記録されたミスのデータはありません。")
   else:
-    if st.button("🚀 Geminiに苦手を分析してもらう"):
-      try:
-        with st.spinner("Geminiがエラーログを解析し、特訓メニューを作成中..."):
-          prompt = f"""
-                    あなたは小学校の親しみやすいタイピング指導のAIコーチです。
-                    以下の児童のローマ字タイピングにおける誤りデータを分析し、
-                    1. 児童がどのような傾向で間違えているかをやさしく解説してください。
-                    2. その苦手克服に向けた具体的な特訓アドバイスや練習問題の提案を出力してください。
+    st.info(f"対象ワード: {', '.join(st.session_state.error_logs)}")
 
-                    誤りデータ:
-                    {json.dumps(st.session_state.error_logs, ensure_ascii=False)}
-                    """
+    error_words_with_romaji = [
+        {"jp": w, "romaji": convert_to_romaji(w)}
+        for w in st.session_state.error_logs
+    ]
+    error_words_json = json.dumps(error_words_with_romaji, ensure_ascii=False)
 
-          # 標準ライブラリ(urllib)を用いたGemini REST API呼び出し
-          url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_api_key}"
-          payload = {
-              "contents": [{"parts": [{"text": prompt}]}]
-          }
-          req = urllib.request.Request(
-              url,
-              data=json.dumps(payload).encode("utf-8"),
-              headers={"Content-Type": "application/json"},
-              method="POST",
-          )
-
-          with urllib.request.urlopen(req) as res:
-            res_body = json.loads(res.read().decode("utf-8"))
-            ai_report = (
-                res_body.get("candidates", [{}])[0]
-                .get("content", {})
-                .get("parts", [{}])[0]
-                .get("text", "レポートの生成に失敗しました。")
-            )
-
-          st.markdown("---")
-          st.markdown("### 💬 Geminiコーチからの詳細診断レポート")
-          st.write(ai_report)
-
-      except Exception as e:
-        st.error(f"APIの呼び出し中にエラーが発生しました: {e}")
+    review_html_code = (
+        """
+        <div style="font-family: sans-serif; padding: 10px; max-width: 600px; margin: auto;">
+            <div style="display: flex; gap: 20px; margin-bottom: 15px;">
+                <div style="flex: 1; background: #fff3cd; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 12px; color: #555; margin-bottom: 5px;">復習出題（ひらがな）</div>
+                    <div id="rev-jp-display" style="font-size: 26px; font-weight: bold; color: #856404;">-</div>
+                </div>
+                <div style="flex: 1; background: #d4edda; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 12px; color: #555; margin-bottom: 5px;">ローマ字表記</div>
+                    <div id="rev-
