@@ -24,13 +24,13 @@ def convert_to_romaji(hira_text):
       "け": "ke",
       "こ": "ko",
       "さ": "sa",
-      "し": "si",  # 教科書表記
+      "し": "si",
       "す": "su",
       "せ": "se",
       "そ": "so",
       "た": "ta",
-      "ち": "ti",  # 教科書表記
-      "つ": "tu",  # 教科書表記
+      "ち": "ti",
+      "つ": "tu",
       "て": "te",
       "と": "to",
       "な": "na",
@@ -40,7 +40,7 @@ def convert_to_romaji(hira_text):
       "の": "no",
       "は": "ha",
       "ひ": "hi",
-      "ふ": "hu",  # 教科書表記
+      "ふ": "hu",
       "へ": "he",
       "ほ": "ho",
       "ま": "ma",
@@ -65,7 +65,7 @@ def convert_to_romaji(hira_text):
       "げ": "ge",
       "ご": "go",
       "ざ": "za",
-      "じ": "zi",  # 教科書表記
+      "じ": "zi",
       "ず": "zu",
       "ぜ": "ze",
       "ぞ": "zo",
@@ -91,12 +91,12 @@ def convert_to_romaji(hira_text):
       "きゃ": "kya",
       "きゅ": "kyu",
       "きょ": "kyo",
-      "しゃ": "sya",  # 教科書表記
-      "しゅ": "syu",  # 教科書表記
-      "しょ": "syo",  # 教科書表記
-      "ちゃ": "tya",  # 教科書表記
-      "ちゅ": "tyu",  # 教科書表記
-      "ちょ": "tyo",  # 教科書表記
+      "しゃ": "sya",
+      "しゅ": "syu",
+      "しょ": "syo",
+      "ちゃ": "tya",
+      "ちゅ": "tyu",
+      "ちょ": "tyo",
       "にゃ": "nya",
       "にゅ": "nyu",
       "にょ": "nyo",
@@ -112,9 +112,9 @@ def convert_to_romaji(hira_text):
       "ぎゃ": "gya",
       "ぎゅ": "gyu",
       "ぎょ": "gyo",
-      "じゃ": "zya",  # 教科書表記
-      "じゅ": "zyu",  # 教科書表記
-      "じょ": "zyo",  # 教科書表記
+      "じゃ": "zya",
+      "じゅ": "zyu",
+      "じょ": "zyo",
       "びゃ": "bya",
       "びゅ": "byu",
       "びょ": "byo",
@@ -149,7 +149,6 @@ def convert_to_romaji(hira_text):
 # 3〜6文字のひらがな単語プール
 # -------------------------------------------------------------------------
 WORD_LIST = [
-    # 3文字
     "あいさつ",
     "きまり",
     "てがみ",
@@ -157,7 +156,6 @@ WORD_LIST = [
     "ねっと",
     "じかん",
     "れきし",
-    # 4文字
     "ありがとう",
     "おつかれ",
     "よろしく",
@@ -170,7 +168,6 @@ WORD_LIST = [
     "じっけん",
     "けんさく",
     "ろぐいん",
-    # 5文字
     "おはよう",
     "すみません",
     "しつれい",
@@ -181,7 +178,6 @@ WORD_LIST = [
     "すまーとふぉん",
     "あるごりずむ",
     "ねっとわーく",
-    # 6文字
     "よろしくね",
     "ぶんかさい",
     "つうちひょう",
@@ -215,9 +211,7 @@ tab1, tab2 = st.tabs(["🎯 タイピング実践", "🤖 AI詳細分析・特�
 
 with tab1:
   current_jp = st.session_state.current_jp
-  current_romaji = (
-      convert_to_romaji(current_jp)
-  )  # 教科書表記で自動ローマ字生成
+  current_romaji = convert_to_romaji(current_jp)
 
   st.markdown("---")
   col_t1, col_t2 = st.columns(2)
@@ -234,15 +228,17 @@ with tab1:
       key=f"user_typing_{st.session_state.input_id}",
   )
 
-  # 自動でフォーカスを維持するJS
+  # 🎛️ わずかな遅延（50ミリ秒）を入れて、DOM生成完了後に確実に入力欄にフォーカスを当てる
   components.html(
       """
         <script>
-            const doc = window.parent.document;
-            const inputs = doc.querySelectorAll('input[type="text"]');
-            if (inputs.length > 0) {
-                inputs[inputs.length - 1].focus();
-            }
+            setTimeout(function() {
+                const doc = window.parent.document;
+                const inputs = doc.querySelectorAll('input[type="text"]');
+                if (inputs.length > 0) {
+                    inputs[inputs.length - 1].focus();
+                }
+            }, 50);
         </script>
         """,
       height=0,
@@ -292,27 +288,4 @@ with tab2:
     )
   else:
     st.write(
-        f"これまでに検知されたミス総数: **{len(st.session_state.error_logs)}件**"
-    )
-
-    with st.expander("📊 蓄積されたエラーログの詳細を確認する"):
-      for idx, log in enumerate(st.session_state.error_logs[-10:]):
-        st.write(
-            f"{idx+1}. お題: **{log['jp_word']}** (`{log['target_romaji']}`) /"
-            f" 誤入力: `{log['typed_wrong']}`"
-        )
-
-    if st.button("🚀 AIに詳細な苦手を分析してもらう"):
-      with st.spinner(
-          "AIが蓄積されたエラーデータを解析し、傾向を診断中..."
-      ):
-        st.markdown("---")
-        st.markdown("### 💬 AIコーチからの詳細診断レポート")
-        st.write(
-            "「お疲れ様です！小学校の教科書表記でのタイピングログを分析しました。"
-            "『し（si）』や『ち（ti）』『つ（tu）』『ふ（hu）』などの学校ならではの表記ルールに慣れながら、"
-            "リズムよく入力できています！」"
-        )
-        st.markdown("### ✨ あなたの弱点を克服するための特訓メニュー")
-        st.markdown("1. `s yukudai` （※例：syukudaiなど、子音の切り替え）")
-        st.markdown("2. `tu tusin` （基礎的な音の組み合わせ）")
+        f"これまでに検知されたミス総数: **{len
