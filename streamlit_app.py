@@ -84,7 +84,7 @@ def convert_to_romaji(hira_text):
       "ぷ": "pu",
       "ぺ": "pe",
       "ぽ": "po",
-      "ー": "",
+      "ー": "-",  # 💡 伸ばし棒をハイフンとして入力対象にする
   }
 
   compounds = {
@@ -226,13 +226,12 @@ with tab1:
     st.success(f"### `{current_romaji}`")
   st.markdown("---")
 
-  # テキスト入力欄
   user_input = st.text_input(
       "上のローマ字をここに入力してEnterを押してください",
       key=f"user_typing_{st.session_state.input_id}",
   )
 
-  # 🎛️ レイアウトを崩さずに、描画直後の入力枠へ強制的にフォーカスを戻すJS（高さ0）
+  # カーソル自動維持用JS
   components.html(
       """
         <script>
