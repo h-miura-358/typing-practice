@@ -1,6 +1,6 @@
-from google import genai
 import json
 import random
+import google.generativeai as genai
 import streamlit as st
 import streamlit.components.v1 as components
 
