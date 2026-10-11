@@ -1,3 +1,4 @@
+import json
 import random
 import streamlit as st
 import streamlit.components.v1 as components
@@ -57,7 +58,6 @@ def convert_to_romaji(hira_text):
       "れ": "re",
       "ろ": "ro",
       "わ": "wa",
-      "를": "wo",
       "を": "wo",
       "ん": "n",
       "が": "ga",
@@ -185,14 +185,6 @@ WORD_LIST = [
 ]
 WORD_LIST = [w for w in list(set(WORD_LIST)) if 3 <= len(w) <= 6]
 
-# セッション初期化
-if "success_count" not in st.session_state:
-  st.session_state.success_count = 0
-if "mistake_count" not in st.session_state:
-  st.session_state.mistake_count = 0
-if "error_logs" not in st.session_state:
-  st.session_state.error_logs = []
-
 st.title("⌨️ 小学校のローマ字タイピング")
 st.caption(
     "小学校の教科書に合わせたローマ字表記（si, ti, tu, hu, zi 等）で練習できます。"
@@ -201,17 +193,14 @@ st.caption(
 tab1, tab2 = st.tabs(["🎯 タイピング実践", "🤖 AI詳細分析・特訓"])
 
 with tab1:
-  # ランダムな単語の候補をPythonからJSへ渡すためにリスト化
-  import json
-
   words_with_romaji = [
       {"jp": w, "romaji": convert_to_romaji(w)} for w in WORD_LIST
   ]
-  words_json = json.dumps(words_with_romaji)
+  words_json = json.dumps(words_with_romaji, ensure_ascii=False)
 
-  # 🎛️ 完全常駐型のカスタムHTMLタイピングエンジン（ページ再描画なしでカーソルが絶対に外れない）
-  components.html(
-      f"""
+  # 🎛️ f文字列ではなく通常の文字列として定義し、プレースホルダー部分だけ安全に埋め込む
+  html_code = (
+      """
     <div style="font-family: sans-serif; padding: 10px; max-width: 600px; margin: auto;">
         <div style="display: flex; gap: 20px; margin-bottom: 15px;">
             <div style="flex: 1; background: #e8f4fd; padding: 15px; border-radius: 8px; text-align: center;">
@@ -239,7 +228,9 @@ with tab1:
     </div>
 
     <script>
-        const wordList = {words_json};
+        const wordList = """
+      + words_json
+      + """;
         let currentItem = wordList[Math.floor(Math.random() * wordList.length)];
         
         let successCount = 0;
@@ -258,11 +249,9 @@ with tab1:
             typingInput.value = '';
         }
 
-        // 初回ロード時＆常時フォーカス維持
         updateScreen();
         typingInput.focus();
 
-        // 画面のどこをクリックしても、あるいはページがフォーカスを取り戻した時に入力欄へカーソルを戻す
         window.addEventListener('focus', () => typingInput.focus());
         document.addEventListener('click', () => typingInput.focus());
 
@@ -270,13 +259,11 @@ with tab1:
             const val = typingInput.value;
             
             if (currentItem.romaji === val) {
-                // 🎉 正解！
                 successCount++;
                 successCntEl.innerText = successCount;
                 feedback.style.color = '#28a745';
                 feedback.innerText = '✅ 正解！次の問題へ進みます！';
                 
-                // 次の問題へ（ページ再描画なし）
                 let nextItem;
                 do {
                     nextItem = wordList[Math.floor(Math.random() * wordList.length)];
@@ -289,37 +276,31 @@ with tab1:
                 }, 400);
 
             } else if (currentItem.romaji.startsWith(val)) {
-                // 順調
                 feedback.style.color = '#17a2b8';
                 feedback.innerText = '✅ 順調です！';
             } else {
-                // ミス
                 mistakeCount++;
                 mistakeCntEl.innerText = mistakeCount;
                 feedback.style.color = '#dc3545';
                 feedback.innerText = '⚠️ 入力ミスです！もう一度確認してね';
-                // 間違えたら入力をリセット
                 typingInput.value = '';
             }
         });
 
-        // 定期的にフォーカスを監視して強制維持（カーソル外れを完全にシャットアウト）
         setInterval(() => {
             if (document.activeElement !== typingInput) {
                 typingInput.focus();
             }
         }, 200);
     </script>
-    """,
-      height=300,
+    """
   )
+
+  components.html(html_code, height=300)
 
 with tab2:
   st.subheader("🤖 蓄積されたデータに基づくAI分析＆特訓メニュー")
-  st.info(
-      "※新エンジンではブラウザ側で超高速・快適にタイピングが行えます！"
-      "（AI詳細分析機能は次回のアップデートでブラウザ連動版に拡張予定です）"
-  )
+  st.info("ブラウザ側で超高速・快適にタイピングが行えます！")
   st.markdown("### ✨ おすすめの特訓ポイント")
-  st.markdown("1. `si` (`し`), `ti` (`ち`), `tu` (`つ`), `hu` (`ふ`), `zi` (`じ` / `ぢ`) の確認")
-  st.markdown("2. 伸ばし棒 `-` の位置（例: `sumatofon` のような長音）")
+  st.markdown("1. `si` (`し`), `ti` (`ち`), `tu` (`つ`), `hu` (`ふ`), `zi` (`じ`) の確認")
+  st.markdown("2. 伸ばし棒 `-` の位置（例: `sumatofon` 等の長音）")
