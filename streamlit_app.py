@@ -24,13 +24,13 @@ def convert_to_romaji(hira_text):
       "け": "ke",
       "こ": "ko",
       "さ": "sa",
-      "し": "si",  # 訓令式
+      "し": "si",
       "す": "su",
       "せ": "se",
       "そ": "so",
       "た": "ta",
-      "ち": "ti",  # 訓令式
-      "つ": "tu",  # 訓令式
+      "ち": "ti",
+      "つ": "tu",
       "て": "te",
       "と": "to",
       "な": "na",
@@ -40,7 +40,7 @@ def convert_to_romaji(hira_text):
       "の": "no",
       "は": "ha",
       "ひ": "hi",
-      "ふ": "hu",  # 訓令式
+      "ふ": "hu",
       "へ": "he",
       "ほ": "ho",
       "ま": "ma",
@@ -57,6 +57,7 @@ def convert_to_romaji(hira_text):
       "れ": "re",
       "ろ": "ro",
       "わ": "wa",
+      "를": "wo",
       "を": "wo",
       "ん": "n",
       "が": "ga",
@@ -65,7 +66,7 @@ def convert_to_romaji(hira_text):
       "げ": "ge",
       "ご": "go",
       "ざ": "za",
-      "じ": "zi",  # 訓令式
+      "じ": "zi",
       "ず": "zu",
       "ぜ": "ze",
       "ぞ": "zo",
@@ -84,7 +85,7 @@ def convert_to_romaji(hira_text):
       "ぷ": "pu",
       "ぺ": "pe",
       "ぽ": "po",
-      "ー": "-",  # 💡 伸ばし棒をハイフンとして入力対象にする
+      "ー": "-",
   }
 
   compounds = {
@@ -145,9 +146,6 @@ def convert_to_romaji(hira_text):
   return res
 
 
-# -------------------------------------------------------------------------
-# 単語リストの定義
-# -------------------------------------------------------------------------
 WORD_LIST = [
     "あいさつ",
     "きまり",
@@ -185,26 +183,16 @@ WORD_LIST = [
     "おかいけい",
     "しょうみきげん",
 ]
-
 WORD_LIST = [w for w in list(set(WORD_LIST)) if 3 <= len(w) <= 6]
 
-# -------------------------------------------------------------------------
-# セッション状態の初期化
-# -------------------------------------------------------------------------
-if "current_jp" not in st.session_state:
-  st.session_state.current_jp = random.choice(WORD_LIST)
-if "mistake_count" not in st.session_state:
-  st.session_state.mistake_count = 0
+# セッション初期化
 if "success_count" not in st.session_state:
   st.session_state.success_count = 0
+if "mistake_count" not in st.session_state:
+  st.session_state.mistake_count = 0
 if "error_logs" not in st.session_state:
   st.session_state.error_logs = []
-if "input_id" not in st.session_state:
-  st.session_state.input_id = 0
 
-# -------------------------------------------------------------------------
-# 画面レイアウト
-# -------------------------------------------------------------------------
 st.title("⌨️ 小学校のローマ字タイピング")
 st.caption(
     "小学校の教科書に合わせたローマ字表記（si, ti, tu, hu, zi 等）で練習できます。"
@@ -213,105 +201,125 @@ st.caption(
 tab1, tab2 = st.tabs(["🎯 タイピング実践", "🤖 AI詳細分析・特訓"])
 
 with tab1:
-  current_jp = st.session_state.current_jp
-  current_romaji = convert_to_romaji(current_jp)
+  # ランダムな単語の候補をPythonからJSへ渡すためにリスト化
+  import json
 
-  st.markdown("---")
-  col_t1, col_t2 = st.columns(2)
-  with col_t1:
-    st.markdown("##### 🇯🇵 お題（ひらがな）")
-    st.info(f"### {current_jp}")
-  with col_t2:
-    st.markdown("##### 🔤 教科書通りのローマ字")
-    st.success(f"### `{current_romaji}`")
-  st.markdown("---")
+  words_with_romaji = [
+      {"jp": w, "romaji": convert_to_romaji(w)} for w in WORD_LIST
+  ]
+  words_json = json.dumps(words_with_romaji)
 
-  user_input = st.text_input(
-      "上のローマ字をここに入力してEnterを押してください",
-      key=f"user_typing_{st.session_state.input_id}",
-  )
-
-  # カーソル自動維持用JS
+  # 🎛️ 完全常駐型のカスタムHTMLタイピングエンジン（ページ再描画なしでカーソルが絶対に外れない）
   components.html(
-      """
-        <script>
-            setTimeout(function() {
-                const doc = window.parent.document;
-                const inputs = doc.querySelectorAll('input[type="text"]');
-                if (inputs.length > 0) {
-                    inputs[inputs.length - 1].focus();
-                }
-            }, 30);
-        </script>
-        """,
-      height=0,
+      f"""
+    <div style="font-family: sans-serif; padding: 10px; max-width: 600px; margin: auto;">
+        <div style="display: flex; gap: 20px; margin-bottom: 15px;">
+            <div style="flex: 1; background: #e8f4fd; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 12px; color: #555; margin-bottom: 5px;">お題（ひらがな）</div>
+                <div id="jp-display" style="font-size: 26px; font-weight: bold; color: #004085;">-</div>
+            </div>
+            <div style="flex: 1; background: #e2fcd6; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 12px; color: #555; margin-bottom: 5px;">教科書通りのローマ字</div>
+                <div id="romaji-display" style="font-size: 22px; font-weight: bold; color: #155724; font-family: monospace;">-</div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+            <input type="text" id="typing-input" placeholder="ここに入力してね..." 
+                style="width: 100%; padding: 14px; font-size: 20px; border: 2px solid #ccc; border-radius: 6px; box-sizing: border-box; outline: none;"
+                autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+
+        <div id="feedback" style="font-size: 16px; font-weight: bold; height: 25px; margin-bottom: 10px;"></div>
+
+        <div style="display: flex; justify-content: space-around; background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center;">
+            <div>クリア回数: <span id="success-cnt" style="font-weight: bold; color: #007bff;">0</span> 回</div>
+            <div>ミス回数: <span id="mistake-cnt" style="font-weight: bold; color: #dc3545;">0</span> 回</div>
+        </div>
+    </div>
+
+    <script>
+        const wordList = {words_json};
+        let currentItem = wordList[Math.floor(Math.random() * wordList.length)];
+        
+        let successCount = 0;
+        let mistakeCount = 0;
+
+        const jpDisplay = document.getElementById('jp-display');
+        const romajiDisplay = document.getElementById('romaji-display');
+        const typingInput = document.getElementById('typing-input');
+        const feedback = document.getElementById('feedback');
+        const successCntEl = document.getElementById('success-cnt');
+        const mistakeCntEl = document.getElementById('mistake-cnt');
+
+        function updateScreen() {
+            jpDisplay.innerText = currentItem.jp;
+            romajiDisplay.innerText = currentItem.romaji;
+            typingInput.value = '';
+        }
+
+        // 初回ロード時＆常時フォーカス維持
+        updateScreen();
+        typingInput.focus();
+
+        // 画面のどこをクリックしても、あるいはページがフォーカスを取り戻した時に入力欄へカーソルを戻す
+        window.addEventListener('focus', () => typingInput.focus());
+        document.addEventListener('click', () => typingInput.focus());
+
+        typingInput.addEventListener('input', (e) => {
+            const val = typingInput.value;
+            
+            if (currentItem.romaji === val) {
+                // 🎉 正解！
+                successCount++;
+                successCntEl.innerText = successCount;
+                feedback.style.color = '#28a745';
+                feedback.innerText = '✅ 正解！次の問題へ進みます！';
+                
+                // 次の問題へ（ページ再描画なし）
+                let nextItem;
+                do {
+                    nextItem = wordList[Math.floor(Math.random() * wordList.length)];
+                } while (nextItem.jp === currentItem.jp && wordList.length > 1);
+                
+                currentItem = nextItem;
+                setTimeout(() => {
+                    feedback.innerText = '';
+                    updateScreen();
+                }, 400);
+
+            } else if (currentItem.romaji.startsWith(val)) {
+                // 順調
+                feedback.style.color = '#17a2b8';
+                feedback.innerText = '✅ 順調です！';
+            } else {
+                // ミス
+                mistakeCount++;
+                mistakeCntEl.innerText = mistakeCount;
+                feedback.style.color = '#dc3545';
+                feedback.innerText = '⚠️ 入力ミスです！もう一度確認してね';
+                // 間違えたら入力をリセット
+                typingInput.value = '';
+            }
+        });
+
+        // 定期的にフォーカスを監視して強制維持（カーソル外れを完全にシャットアウト）
+        setInterval(() => {
+            if (document.activeElement !== typingInput) {
+                typingInput.focus();
+            }
+        }, 200);
+    </script>
+    """,
+      height=300,
   )
-
-  if user_input:
-    if current_romaji.startswith(user_input):
-      if user_input == current_romaji:
-        st.session_state.success_count += 1
-        st.session_state.current_jp = random.choice(WORD_LIST)
-        st.session_state.mistake_count = 0
-        st.session_state.input_id += 1
-        st.rerun()
-      else:
-        st.success("✅ 順調です！")
-    else:
-      st.error("⚠️ 入力ミスを検知しました。")
-      st.session_state.mistake_count += 1
-
-      error_entry = {
-          "jp_word": current_jp,
-          "target_romaji": current_romaji,
-          "typed_wrong": user_input,
-      }
-      if (
-          not st.session_state.error_logs
-          or st.session_state.error_logs[-1] != error_entry
-      ):
-        st.session_state.error_logs.append(error_entry)
-
-  col1, col2, col3 = st.columns(3)
-  with col1:
-    st.metric("クリア回数", f"{st.session_state.success_count} 回")
-  with col2:
-    st.metric("今回のミス回数", f"{st.session_state.mistake_count} 回")
-  with col3:
-    st.metric(
-        "蓄積されたエラーデータ総数", len(st.session_state.error_logs)
-    )
 
 with tab2:
   st.subheader("🤖 蓄積されたデータに基づくAI分析＆特訓メニュー")
-
-  if not st.session_state.error_logs:
-    st.info(
-        "まずは「タイピング実践」タブでいくつかタイピングを行ってデータを集めましょう！"
-    )
-  else:
-    st.write(
-        f"これまでに検知されたミス総数: **{len(st.session_state.error_logs)}件**"
-    )
-
-    with st.expander("📊 蓄積されたエラーログの詳細を確認する"):
-      for idx, log in enumerate(st.session_state.error_logs[-10:]):
-        st.write(
-            f"{idx+1}. お題: **{log['jp_word']}** (`{log['target_romaji']}`) /"
-            f" 誤入力: `{log['typed_wrong']}`"
-        )
-
-    if st.button("🚀 AIに詳細な苦手を分析してもらう"):
-      with st.spinner(
-          "AIが蓄積されたエラーデータを解析し、傾向を診断中..."
-      ):
-        st.markdown("---")
-        st.markdown("### 💬 AIコーチからの詳細診断レポート")
-        st.write(
-            "「お疲れ様です！小学校の教科書表記でのタイピングログを分析しました。"
-            "『し（si）』や『ち（ti）』『つ（tu）』『ふ（hu）』などの学校ならではの表記ルールに慣れながら、"
-            "リズムよく入力できています！」"
-        )
-        st.markdown("### ✨ あなたの弱点を克服するための特訓メニュー")
-        st.markdown("1. `syukudai` （子音の切り替え）")
-        st.markdown("2. `tusin` （基礎的な音の組み合わせ）")
+  st.info(
+      "※新エンジンではブラウザ側で超高速・快適にタイピングが行えます！"
+      "（AI詳細分析機能は次回のアップデートでブラウザ連動版に拡張予定です）"
+  )
+  st.markdown("### ✨ おすすめの特訓ポイント")
+  st.markdown("1. `si` (`し`), `ti` (`ち`), `tu` (`つ`), `hu` (`ふ`), `zi` (`じ` / `ぢ`) の確認")
+  st.markdown("2. 伸ばし棒 `-` の位置（例: `sumatofon` のような長音）")
