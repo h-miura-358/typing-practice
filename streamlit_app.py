@@ -207,47 +207,4 @@ st.caption(
     "小学校の教科書に合わせたローマ字表記（si, ti, tu, hu, zi 等）で練習できます。"
 )
 
-tab1, tab2 = st.tabs(["🎯 タイピング実践", "🤖 AI詳細分析・特訓"])
-
-with tab1:
-  current_jp = st.session_state.current_jp
-  current_romaji = convert_to_romaji(current_jp)
-
-  st.markdown("---")
-  col_t1, col_t2 = st.columns(2)
-  with col_t1:
-    st.markdown("##### 🇯🇵 お題（ひらがな）")
-    st.info(f"### {current_jp}")
-  with col_t2:
-    st.markdown("##### 🔤 教科書通りのローマ字")
-    st.success(f"### `{current_romaji}`")
-  st.markdown("---")
-
-  # テキスト入力欄（問題ごとにキーを変えてクリア）
-  user_input = st.text_input(
-      "上のローマ字をここに入力してEnterを押してください",
-      key=f"user_typing_{st.session_state.input_id}",
-  )
-
-  if user_input:
-    if current_romaji.startswith(user_input):
-      if user_input == current_romaji:
-        st.session_state.success_count += 1
-        st.session_state.current_jp = random.choice(WORD_LIST)
-        st.session_state.mistake_count = 0
-        st.session_state.input_id += 1
-        st.rerun()
-      else:
-        st.success("✅ 順調です！")
-    else:
-      st.error("⚠️ 入力ミスを検知しました。")
-      st.session_state.mistake_count += 1
-
-      error_entry = {
-          "jp_word": current_jp,
-          "target_romaji": current_romaji,
-          "typed_wrong": user_input,
-      }
-      if (
-          not st.session_state.error_logs
-          or st.session_state.
+tab1
