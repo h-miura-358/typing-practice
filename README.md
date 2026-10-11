@@ -1,25 +1,47 @@
-# 🎈 Blank app template
+# ⌨️ ローマ字タイピングトレーニング & 苦手克服モード
 
-A simple Streamlit app template for you to modify!
+Streamlitを利用した、Webベースのローマ字タイピングトレーニングアプリケーションです。標準的なローマ字入力による実践練習と、これまでのトレーニングで記録された誤答データに基づく「苦手克服モード」を搭載しています。
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blank-app-template.streamlit.app/)
+---
 
-### How to run it on your own machine
+## 🌟 主な機能
 
-Prerequisite: install `uv` if you don't already have it.
+* **通常トレーニング**: ランダムに出題されるひらがなの単語に対し、教科書に準拠した標準的なローマ字入力でタイピングを実践できます。
+* **苦手克服モード**: トレーニング中に誤答した単語（ミス記録）のみを自動で抽出し、重点的に繰り返して復習・克服できる集中特訓モードです。
+* **記録のリセット**: ミスデータのクリアボタンにより、いつでも学習履歴をリセットして再スタートできます。
+* **完全スタンドアロン構成**: 外部AIライブラリ等の依存関係を排除し、Python標準ライブラリと Streamlit のみで動作するため、デプロイ時のトラブルを防ぎます。
 
+---
+
+## 🛠 セットアップ方法
+
+### 1. 依存ライブラリのインストール
+
+Python環境がインストールされていることを確認し、必要なライブラリ（Streamlit）をインストールしてください。
+
+```bash
+pip install streamlit
 ```
-$ curl -LsSf https://astral.sh/uv/install.sh | sh
+
+### 2. アプリの起動
+
+以下のコマンドでアプリケーションを起動します。
+
+```bash
+streamlit run streamlit_app.py
 ```
 
-1. Sync the dependencies
+---
 
-   ```
-   $ uv sync
-   ```
+## 💻 使用技術
 
-2. Run the app
+* **Frontend / UI**: [Streamlit](https://streamlit.io/)
+* **Typing Engine**: `streamlit.components.v1` (Custom JavaScript Engine)
+* **Core Logic**: Python (`json`, `random`, `streamlit`)
 
-   ```
-   $ uv run streamlit run streamlit_app.py
-   ```
+---
+
+## 💡 今後のロードマップ
+
+* **APIを用いた苦手分析と問題生成の実装**: 将来的にGemini API等の生成AIを再導入し、ユーザーの誤り傾向から個別の詳細な分析レポート作成や、弱点に合わせたカスタム練習問題の自動生成機能の拡張。
+* タイピング速度（WPM）や正確性のスコア記録・可視化機能の充実。
