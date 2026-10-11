@@ -252,11 +252,11 @@ with tab1:
         const successCntEl = document.getElementById('success-cnt');
         const mistakeCntEl = document.getElementById('mistake-cnt');
 
-        function updateScreen() {
+        function updateScreen() {{
             jpDisplay.innerText = currentItem.jp;
             romajiDisplay.innerText = currentItem.romaji;
             typingInput.value = '';
-        }
+        }}
 
         updateScreen();
         typingInput.focus();
@@ -264,43 +264,43 @@ with tab1:
         window.addEventListener('focus', () => typingInput.focus());
         document.addEventListener('click', () => typingInput.focus());
 
-        typingInput.addEventListener('input', (e) => {
+        typingInput.addEventListener('input', (e) => {{
             const val = typingInput.value;
             
-            if (currentItem.romaji === val) {
+            if (currentItem.romaji === val) {{
                 successCount++;
                 successCntEl.innerText = successCount;
                 feedback.style.color = '#28a745';
                 feedback.innerText = '✅ 正解！次の問題へ進みます';
                 
                 let nextItem;
-                do {
+                do {{
                     nextItem = wordList[Math.floor(Math.random() * wordList.length)];
-                } while (nextItem.jp === currentItem.jp && wordList.length > 1);
+                }} while (nextItem.jp === currentItem.jp && wordList.length > 1);
                 
                 currentItem = nextItem;
-                setTimeout(() => {
+                setTimeout(() => {{
                     feedback.innerText = '';
                     updateScreen();
-                }, 400);
+                }}, 400);
 
-            } else if (currentItem.romaji.startsWith(val)) {
+            }} else if (currentItem.romaji.startsWith(val)) {{
                 feedback.style.color = '#17a2b8';
                 feedback.innerText = '✅ 順調です';
-            } else {
+            }} else {{
                 mistakeCount++;
                 mistakeCntEl.innerText = mistakeCount;
                 feedback.style.color = '#dc3545';
                 feedback.innerText = '⚠️ 入力ミスです。確認してください';
                 typingInput.value = '';
-            }
-        });
+            }}
+        }});
 
-        setInterval(() => {
-            if (document.activeElement !== typingInput) {
+        setInterval(() => {{
+            if (document.activeElement !== typingInput) {{
                 typingInput.focus();
-            }
-        }, 200);
+            }}
+        }}, 200);
     </script>
     """
 
@@ -365,11 +365,11 @@ with tab2:
             const revSuccessCntEl = document.getElementById('rev-success-cnt');
             const revMistakeCntEl = document.getElementById('rev-mistake-cnt');
 
-            function updateRevScreen() {
+            function updateRevScreen() {{
                 revJpDisplay.innerText = revCurrentItem.jp;
                 revRomajiDisplay.innerText = revCurrentItem.romaji;
                 revTypingInput.value = '';
-            }
+            }}
 
             updateRevScreen();
             revTypingInput.focus();
@@ -377,43 +377,43 @@ with tab2:
             window.addEventListener('focus', () => revTypingInput.focus());
             document.addEventListener('click', () => revTypingInput.focus());
 
-            revTypingInput.addEventListener('input', (e) => {
+            revTypingInput.addEventListener('input', (e) => {{
                 const val = revTypingInput.value;
                 
-                if (revCurrentItem.romaji === val) {
+                if (revCurrentItem.romaji === val) {{
                     revSuccessCount++;
                     revSuccessCntEl.innerText = revSuccessCount;
                     revFeedback.style.color = '#28a745';
                     revFeedback.innerText = '✅ 正解です';
                     
                     let nextItem;
-                    do {
+                    do {{
                         nextItem = errorWordList[Math.floor(Math.random() * errorWordList.length)];
-                    } while (nextItem.jp === revCurrentItem.jp && errorWordList.length > 1);
+                    }} while (nextItem.jp === revCurrentItem.jp && errorWordList.length > 1);
                     
                     revCurrentItem = nextItem;
-                    setTimeout(() => {
+                    setTimeout(() => {{
                         revFeedback.innerText = '';
                         updateRevScreen();
-                    }, 400);
+                    }}, 400);
 
-                } else if (revCurrentItem.romaji.startsWith(val)) {
+                }} else if (revCurrentItem.romaji.startsWith(val)) {{
                     revFeedback.style.color = '#17a2b8';
                     revFeedback.innerText = '✅ 順調です';
-                } else {
+                }} else {{
                     revMistakeCount++;
                     revMistakeCntEl.innerText = revMistakeCount;
                     revFeedback.style.color = '#dc3545';
                     revFeedback.innerText = '⚠️ 入力ミスです。確認してください';
                     revTypingInput.value = '';
-                }
-            });
+                }}
+            }});
 
-            setInterval(() => {
-                if (document.activeElement !== revTypingInput) {
+            setInterval(() => {{
+                if (document.activeElement !== revTypingInput) {{
                     revTypingInput.focus();
-                }
-            }, 200);
+                }}
+            }}, 200);
         </script>
         """
 
