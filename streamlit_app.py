@@ -74,6 +74,8 @@ with tab1:
   if st.button("🔀 次の問題へ"):
     st.session_state.current_item = random.choice(WORD_DATA)
     st.session_state.mistake_count = 0
+    # ✨ ここで入力欄のセッション状態を強制的に空にする
+    st.session_state["user_typing"] = ""
     st.rerun()
 
   current_jp = st.session_state.current_item["jp"]
@@ -89,9 +91,9 @@ with tab1:
     st.success(f"### `{current_romaji}`")
   st.markdown("---")
 
-  # リアルタイム入力
+  # リアルタイム入力（key="user_typing" を指定しているため、セッションで値が管理されます）
   user_input = st.text_input(
-      "上のローマ字をここに入力してください", key="user_typing", value=""
+      "上のローマ字をここに入力してください", key="user_typing"
   )
 
   if user_input:
