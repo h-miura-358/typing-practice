@@ -337,7 +337,6 @@ with tab2:
         st.error("`google-genai` ライブラリがインストールされていません。")
       else:
         try:
-          # Gemini クライアントの初期化
           client = genai.Client(api_key=gemini_api_key)
           with st.spinner("Geminiがエラーログを解析し、特訓メニューを作成中..."):
             prompt = f"""
@@ -350,7 +349,6 @@ with tab2:
                         {json.dumps(st.session_state.error_logs, ensure_ascii=False)}
                         """
 
-            # Gemini の標準的な高速モデル（gemini-2.5-flashなど）を使用
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=prompt,
@@ -362,4 +360,4 @@ with tab2:
             st.write(ai_report)
 
         except Exception as e:
-          st.error(f"APIの呼び出し中にエラーが発生しました: {e}") {e}")
+          st.error(f"APIの呼び出し中にエラーが発生しました: {e}")
